@@ -1,0 +1,67 @@
+name: openbrain-team
+
+services:
+  openbrain:
+    build: .
+    container_name: openbrain_agent
+    ports:
+      - "8769:8769"
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - openbrain_net
+      - affine_net
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8769/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  open-claw:
+    build: ./open-claw
+    container_name: openbrain_openclaw
+    ports:
+      - "18789:18789"
+    volumes:
+      - ./open-claw:/root/.openclaw
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    depends_on:
+      - openbrain
+    networks:
+      - openbrain_net
+      - affine_net
+
+
+  caddy:
+    image: caddy:latest
+    container_name: openbrain_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - openbrain_net
+      - affine_net
+
+networks:
+  openbrain_net:
+    driver: bridge
+  affine_net:
+    external: true
+    name: affine_default
+
+volumes:
+  caddy_data:
+  caddy_config:
