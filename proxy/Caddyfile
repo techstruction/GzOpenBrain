@@ -1,0 +1,31 @@
+{
+    auto_https off
+}
+
+:80 {
+    log {
+        output stdout
+    }
+
+    @gobi {
+        host gobi-gwd-page.techstruction.co
+    }
+    handle @gobi {
+        header X-Caddy-Debug "GOBI"
+        reverse_proxy openbrain_openclaw:18789 {
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-Host {host}
+        }
+    }
+
+    @affine {
+        host affine-macbridge.techstruction.co
+    }
+    handle @affine {
+        header X-Caddy-Debug "AFFINE"
+        reverse_proxy affine_server:3010 {
+            header_up X-Forwarded-Proto https
+            header_up X-Forwarded-Host {host}
+        }
+    }
+}
