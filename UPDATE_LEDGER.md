@@ -27,8 +27,6 @@
 - **Tested:** Yes — Verified with `openclaw skills info skill-creator` inside the `openbrain_openclaw` container.
 
 ---
-
-
 ### [2026-03-13] — CONFIG — Configured SMTP for email invites
 - **What changed:**
   - Added SMTP configuration variables (`MAILER_HOST`, `MAILER_PORT`, `MAILER_USER`, `MAILER_PASSWORD`, `MAILER_SENDER`, `MAILER_SECURE`) to the root `.env` and `storage/affine/.env`.
