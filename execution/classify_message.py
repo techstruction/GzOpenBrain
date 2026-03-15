@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 """
-classify_message.py — OpenBrain Sorter Agent
+OpenBrain Sorter — classify_message.py
 
-Classifies a raw text message into a domain, category, and structured JSON entry.
-Supports Kimi k2.5 (Nvidia API) and Ollama backends via INTELLIGENCE_BACKEND env var.
+Classifies incoming messages into Domain/Category using LLMs.
+Supports context for better classification of short commands like "save it".
 
 Usage:
-    python3 execution/classify_message.py "your raw message here"
-    python3 execution/classify_message.py --stdin   (reads from stdin)
-    python3 execution/classify_message.py --test    (runs built-in test cases)
-
-Output (stdout):
-    JSON object matching the OpenBrain Form schema.
-    Exits with code 0 on success, 1 on error.
+    python3 execution/classify_message.py "Message text"
+    python3 execution/classify_message.py "save it" --context "Trading charts research..."
 """
 
 import os
@@ -51,13 +46,13 @@ Your job is to classify a raw incoming message into a structured JSON entry.
 
 ## 📝 Instructions
 1. Read the message carefully.
-2. If the user mentions a domain (e.g., 'for my car' or 'Cannapy'), prioritize that domain.
+2. If provided, use the CONTEXT to understand ambiguous messages (like "save this" or "add it").
 3. Choose the single best domain and category.
 4. Write a concise title (max 8 words).
 5. Write a 1-2 sentence summary that captures the core meaning.
 6. Extract 3-5 relevant tags (lowercase, no spaces, use underscores).
-7. Determine intent: capture (default) | execute (if it's a specific invitation for a specialist agent to perform a task, write/run code, research a topic, or solve a problem). Examples: "Write a script", "Search for the latest news on...", "Help me debug...", "Test this function" -> execute. "Idea for a new app", "Note about the car", "Buying BTC today" -> capture.
-8. Set quality_score: high | medium | low (high = actionable/specific).
+7. Determine intent: capture (default) | execute (if it's a specific invitation for a specialist agent to perform a task).
+8. Set quality_score: high | medium | low.
 9. Return ONLY valid JSON – no code fences, no markdown, no explanation.
 
 ## Output schema
@@ -75,7 +70,7 @@ Your job is to classify a raw incoming message into a structured JSON entry.
 
 
 # ─── Backend: Kimi (Nvidia API) ───────────────────────────────────────────────
-def classify_with_kimi(message: str) -> dict:
+def classify_with_kimi(message: str, context: str = None) -> dict:
     try:
         from openai import OpenAI
     except ImportError:
@@ -83,20 +78,24 @@ def classify_with_kimi(message: str) -> dict:
 
     api_key = os.getenv('KIMI_API_KEY')
     base_url = os.getenv('KIMI_BASE_URL', 'https://integrate.api.nvidia.com/v1')
-    model = os.getenv('KIMI_MODEL', 'moonshotai/kimi-k2-5')
+    model = os.getenv('KIMI_MODEL', 'meta/llama-3.1-405b-instruct')
 
     if not api_key or api_key == 'your_kimi_api_key_here':
         raise RuntimeError("KIMI_API_KEY not set in .env")
 
     client = OpenAI(api_key=api_key, base_url=base_url)
+    
+    user_content = f"Message to classify:\n\n{message}"
+    if context:
+        user_content = f"CONTEXT (previous research/output):\n{context}\n\n---\n\n{user_content}"
 
     response = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": CLASSIFICATION_PROMPT},
-            {"role": "user", "content": f"Message to classify:\n\n{message}"}
+            {"role": "user", "content": user_content}
         ],
-        temperature=0.1,  # Low temp for consistent classification
+        temperature=0.1,
         max_tokens=1024,
         timeout=120
     )
@@ -106,7 +105,7 @@ def classify_with_kimi(message: str) -> dict:
 
 
 # ─── Backend: Ollama ──────────────────────────────────────────────────────────
-def classify_with_ollama(message: str) -> dict:
+def classify_with_ollama(message: str, context: str = None) -> dict:
     try:
         import requests
     except ImportError:
@@ -115,11 +114,15 @@ def classify_with_ollama(message: str) -> dict:
     host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
     model = os.getenv('OLLAMA_MODEL', 'qwen3:latest')
 
+    user_content = f"Message to classify:\n\n{message}"
+    if context:
+        user_content = f"CONTEXT (previous research/output):\n{context}\n\n---\n\n{user_content}"
+
     payload = {
         "model": model,
         "messages": [
             {"role": "system", "content": CLASSIFICATION_PROMPT},
-            {"role": "user", "content": f"Message to classify:\n\n{message}"}
+            {"role": "user", "content": user_content}
         ],
         "stream": False,
         "options": {"temperature": 0.1}
@@ -132,104 +135,74 @@ def classify_with_ollama(message: str) -> dict:
         raise RuntimeError(f"Cannot connect to Ollama at {host}. Is the server running?")
 
     raw = resp.json()['message']['content'].strip()
-
-    # Strip markdown code fences if model adds them
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
-
-    return json.loads(raw)
+    # Strip markdown
+    if "```json" in raw:
+        raw = raw.split("```json")[1].split("```")[0]
+    elif "```" in raw:
+        raw = raw.split("```")[1].split("```")[0]
+    
+    return json.loads(raw.strip())
 
 
 # ─── Main classifier ──────────────────────────────────────────────────────────
-def classify(message: str) -> dict:
+def classify(message: str, context: str = None) -> dict:
     """Classify a message using the configured backend."""
     if not message or not message.strip():
         raise ValueError("Cannot classify an empty message")
 
-    backend = INTELLIGENCE_BACKEND
+    backend = os.getenv('INTELLIGENCE_BACKEND', 'kimi').lower()
 
     try:
         if backend == 'kimi':
             print(f"[DEBUG] Using Kimi backend: {os.getenv('KIMI_MODEL')}", file=sys.stderr)
-            result = classify_with_kimi(message)
+            result = classify_with_kimi(message, context)
         elif backend == 'ollama':
             print(f"[DEBUG] Using Ollama backend: {os.getenv('OLLAMA_MODEL')}", file=sys.stderr)
-            result = classify_with_ollama(message)
+            result = classify_with_ollama(message, context)
         else:
-            raise RuntimeError(f"Unknown INTELLIGENCE_BACKEND: '{backend}'. Use 'kimi' or 'ollama'.")
+            raise RuntimeError(f"Unknown INTELLIGENCE_BACKEND: '{backend}'")
     except Exception as e:
-        # If primary backend fails, attempt fallback
         fallback = 'ollama' if backend == 'kimi' else 'kimi'
-        print(f"[WARN] {backend} backend failed: {e}. Attempting fallback to {fallback}...", file=sys.stderr)
+        print(f"[WARN] {backend} failed: {e}. Falling back to {fallback}", file=sys.stderr)
         try:
             if fallback == 'ollama':
-                result = classify_with_ollama(message)
+                result = classify_with_ollama(message, context)
             else:
-                result = classify_with_kimi(message)
-        except Exception as fallback_error:
-            raise RuntimeError(f"Both backends failed. Primary: {e} | Fallback: {fallback_error}")
+                result = classify_with_kimi(message, context)
+        except Exception as fe:
+            raise RuntimeError(f"Both failed. Primary: {e} | Fallback: {fe}")
 
-    # Validate and stamp required fields
-    if result.get('domain') not in DOMAINS:
-        result['domain'] = 'Clan'  # Safe fallback
-    if result.get('category') not in CATEGORIES:
-        result['category'] = 'Inbox Log'
-    if result.get('intent') not in ['capture', 'execute']:
-        result['intent'] = 'capture'
-
+    # Defaults
+    if result.get('domain') not in DOMAINS: result['domain'] = 'Clan'
+    if result.get('category') not in CATEGORIES: result['category'] = 'Inbox Log'
     result['source_raw'] = message
     result['created_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     return result
 
 
-# ─── Built-in tests ───────────────────────────────────────────────────────────
-def run_tests():
-    test_cases = [
-        "BTC broke 100k again, might be time to rebalance the portfolio",
-        "Need to fix the Ollama server on the Windows box, it keeps timing out",
-        "Found a great deal on a used E46 M3 — only 80k miles, clean title",
-        "Dad's birthday is next week, need to order something",
-        "Interesting idea: use the Sorter agent to auto-tag emails too",
-    ]
-    print("Running built-in test cases...\n")
-    for i, msg in enumerate(test_cases, 1):
-        print(f"Test {i}: {msg[:60]}...")
-        try:
-            result = classify(msg)
-            print(f"  → [{result['domain']}] [{result['category']}] — {result['title']}")
-            print(f"     Quality: {result['quality_score']} | Tags: {result['tags']}")
-        except Exception as e:
-            print(f"  ✗ ERROR: {e}")
-        print()
-
-
 # ─── Entry point ──────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='OpenBrain Sorter — classify a message')
-    parser.add_argument('message', nargs='?', help='Raw message text to classify')
-    parser.add_argument('--stdin', action='store_true', help='Read message from stdin')
-    parser.add_argument('--test', action='store_true', help='Run built-in test cases')
+    parser = argparse.ArgumentParser(description='OpenBrain Sorter')
+    parser.add_argument('message', nargs='?')
+    parser.add_argument('--context', help='Context for classification')
+    parser.add_argument('--stdin', action='store_true')
+    parser.add_argument('--test', action='store_true')
     args = parser.parse_args()
 
     if args.test:
-        run_tests()
+        # Simple test
+        print(json.dumps(classify("BTC to the moon", "Trading charts research..."), indent=2))
         sys.exit(0)
 
-    if args.stdin:
-        raw_message = sys.stdin.read().strip()
-    elif args.message:
-        raw_message = args.message
-    else:
-        print("Error: provide a message argument or use --stdin", file=sys.stderr)
+    msg = sys.stdin.read().strip() if args.stdin else args.message
+    if not msg:
+        print("Error: Provide a message", file=sys.stderr)
         sys.exit(1)
 
     try:
-        output = classify(raw_message)
+        output = classify(msg, args.context)
         print(json.dumps(output, indent=2, ensure_ascii=False))
     except Exception as e:
-        print(json.dumps({"error": str(e)}, indent=2), file=sys.stderr)
+        print(json.dumps({"error": str(e)}))
         sys.exit(1)

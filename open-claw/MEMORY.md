@@ -43,3 +43,8 @@ Tags: trading_view, real_time_monitoring, chart_monitoring
 Researching a system to monitor trading view in real-time.
 Tags: trading_view, real_time_monitoring, chart_monitoring
 
+
+### [Clan] Add Note to Brain
+Add a note to the personal brain system.
+Tags: note, brain_system, admin_task
+

@@ -1,20 +1,13 @@
 {
   "meta": {
-    "lastTouchedVersion": "2026.3.11",
-    "lastTouchedAt": "2026-03-15T06:48:10.481Z"
-  },
-  "wizard": {
-    "lastRunAt": "2026-03-15T06:49:32.482788Z",
-    "lastRunVersion": "2026.3.11",
-    "lastRunCommand": "doctor",
-    "lastRunMode": "local"
+    "lastTouchedVersion": "2026.1.24-3",
+    "lastTouchedAt": "2026-01-27T21:00:56.246Z"
   },
   "models": {
     "providers": {
       "ollama": {
         "baseUrl": "http://host.docker.internal:11434/v1",
         "apiKey": "ollama-local",
-        "api": "openai-completions",
         "models": [
           {
             "id": "qwen3-coder:30b",
@@ -32,19 +25,20 @@
             "contextWindow": 32768,
             "maxTokens": 8192
           }
-        ]
+        ],
+        "api": "openai-completions"
       },
       "nvidia": {
         "baseUrl": "https://integrate.api.nvidia.com/v1",
         "apiKey": "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",
-        "api": "openai-completions",
         "models": [
           {
             "id": "meta/llama-3.1-8b-instruct",
             "name": "Llama 3.1 8B (Nvidia)",
             "contextWindow": 128000
           }
-        ]
+        ],
+        "api": "openai-completions"
       }
     }
   },
@@ -59,13 +53,10 @@
       }
     }
   },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
   "tools": {
-    "web": {
-      "search": {
-        "provider": "brave",
-        "apiKey": "BSA4bF1HEImSWkT_wbXomOvqVlAc1cm"
-      }
-    },
     "elevated": {
       "enabled": true,
       "allowFrom": {
@@ -73,38 +64,42 @@
           "*"
         ]
       }
+    },
+    "web": {
+      "search": {
+        "apiKey": "BSA4bF1HEImSWkT_wbXomOvqVlAc1cm"
+      }
     }
-  },
-  "messages": {
-    "ackReactionScope": "group-mentions"
   },
   "commands": {
     "native": "auto",
-    "nativeSkills": "auto",
-    "restart": true,
-    "ownerDisplay": "raw"
+    "nativeSkills": "auto"
   },
   "channels": {
     "telegram": {
       "enabled": true,
       "dmPolicy": "open",
+      "allowFrom": [
+        "*"
+      ],
       "botToken": "8729144210:AAEFgas5T3ID6dyGano7_DebrK59bUDqxcY",
+      "groupPolicy": "open",
+      "streaming": "partial",
       "groups": {
         "*": {
           "requireMention": true
         }
-      },
-      "allowFrom": [
-        "*"
-      ],
-      "groupPolicy": "open",
-      "streaming": "partial"
+      }
     }
   },
   "gateway": {
     "port": 18789,
     "mode": "local",
     "bind": "lan",
+    "trustedProxies": [
+      "172.80.0.0/16",
+      "130.166.192.54"
+    ],
     "controlUi": {
       "allowedOrigins": [
         "http://localhost:18789",
@@ -118,11 +113,7 @@
     "auth": {
       "mode": "token",
       "token": "GOBI_CLAW_SECRET_2026"
-    },
-    "trustedProxies": [
-      "172.80.0.0/16",
-      "130.166.192.54"
-    ]
+    }
   },
   "plugins": {
     "entries": {
@@ -130,5 +121,11 @@
         "enabled": true
       }
     }
+  },
+  "wizard": {
+    "lastRunAt": "2026-01-27T21:00:56.240Z",
+    "lastRunVersion": "2026.1.24-3",
+    "lastRunCommand": "doctor",
+    "lastRunMode": "local"
   }
 }

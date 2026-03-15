@@ -29,6 +29,9 @@ services:
       - "18789:18789"
     volumes:
       - ./open-claw:/root/.openclaw
+    environment:
+      - BRAVE_API_KEY=${BRAVE_API_KEY}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
