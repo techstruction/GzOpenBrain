@@ -17,8 +17,16 @@
 
 **Change types:** `FIX` · `FEATURE` · `ARCHITECTURE` · `DIRECTIVE` · `SCHEMA` · `CONFIG`
 
----
+### [2026-03-14] — FEATURE — Upgraded OpenClaw with Skill Creator ability
+- **What changed:**
+  - Created `open-claw/skills/skill-creator` directory.
+  - Copied `skill-creator` files and renamed `SKILL_skillcreator.md` to `SKILL.md` for OpenClaw compatibility.
+  - Deployed to `macbridge` VPS and verified skill registration via `openclaw skills list`.
+- **Why:** To give the OpenClaw agent the ability to create and optimize its own skills as requested by the user.
+- **Directive updated:** No
+- **Tested:** Yes — Verified with `openclaw skills info skill-creator` inside the `openbrain_openclaw` container.
 
+---
 ### [2026-03-13] — CONFIG — Configured SMTP for email invites
 - **What changed:**
   - Added SMTP configuration variables (`MAILER_HOST`, `MAILER_PORT`, `MAILER_USER`, `MAILER_PASSWORD`, `MAILER_SENDER`, `MAILER_SECURE`) to the root `.env` and `storage/affine/.env`.
