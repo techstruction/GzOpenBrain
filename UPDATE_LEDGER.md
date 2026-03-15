@@ -17,14 +17,24 @@
 
 **Change types:** `FIX` · `FEATURE` · `ARCHITECTURE` · `DIRECTIVE` · `SCHEMA` · `CONFIG`
 
-### [2026-03-14] — FEATURE — Upgraded OpenClaw with Skill Creator ability
+### [2026-03-15] — FEATURE — Optimized Excalidraw Skill Triggering
 - **What changed:**
-  - Created `open-claw/skills/skill-creator` directory.
-  - Copied `skill-creator` files and renamed `SKILL_skillcreator.md` to `SKILL.md` for OpenClaw compatibility.
-  - Deployed to `macbridge` VPS and verified skill registration via `openclaw skills list`.
-- **Why:** To give the OpenClaw agent the ability to create and optimize its own skills as requested by the user.
-- **Directive updated:** No
-- **Tested:** Yes — Verified with `openclaw skills info skill-creator` inside the `openbrain_openclaw` container.
+  - Updated `SKILL.md` frontmatter with a more "pushy" description to override built-in `canvas` tools.
+  - Added a "Triggering Priority" section to the skill body to explicitly warn against using competing native tools.
+  - Restarted the `open-claw` container on `macbridge` to apply instructions.
+- **Why:** The bot was defaulting to a built-in `canvas` tool which failed due to missing mobile node context.
+- **Directive updated:** Yes — `open-claw/skills/excalidraw-builder/SKILL.md`
+- **Tested:** Yes — Deployment and container restart verified.
+
+### [2026-03-15] — FEATURE — Migrated Excalidraw Skill to Macbridge
+- **What changed:**
+  - Packaged Excalidraw skill into `open-claw/skills/excalidraw-builder/`.
+  - Updated `open-claw/Dockerfile` to install `python3-pip`, `Excalidraw_Interface`, and `pillow`.
+  - Refined `SKILL.md` instructions with file retrieval details and corrected execution paths.
+  - Deployed to `macbridge` VPS and verified dependencies inside the container.
+- **Why:** To enable the OpenClaw agent to generate diagrams and visualizations on the production server.
+- **Directive updated:** Yes — `open-claw/skills/excalidraw-builder/SKILL.md`
+- **Tested:** Yes — Verified `Excalidraw_Interface` and `PIL` imports in the `openbrain_openclaw` container.
 
 ---
 ### [2026-03-13] — CONFIG — Configured SMTP for email invites
