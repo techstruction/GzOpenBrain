@@ -31,3 +31,5 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+NemoClaw/
+.nemoclaw-backups/

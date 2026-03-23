@@ -14,7 +14,6 @@ services:
     restart: unless-stopped
     networks:
       - openbrain_net
-      - affine_net
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8769/health"]
@@ -39,7 +38,6 @@ services:
       - openbrain
     networks:
       - openbrain_net
-      - affine_net
 
 
   caddy:
@@ -47,7 +45,7 @@ services:
     container_name: openbrain_proxy
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8818:8818"
       - "443:443"
       - "443:443/udp"
     volumes:
@@ -56,14 +54,24 @@ services:
       - caddy_config:/config
     networks:
       - openbrain_net
-      - affine_net
+
+
+  openbrain_memu:
+    build: ./mcp-memu
+    container_name: openbrain_memu
+    ports:
+      - "8001:8001"
+    volumes:
+      - .env:/app/.env
+      - ./open-claw:/root/.openclaw
+    restart: unless-stopped
+    networks:
+      - openbrain_net
+
 
 networks:
   openbrain_net:
     driver: bridge
-  affine_net:
-    external: true
-    name: affine_default
 
 volumes:
   caddy_data:

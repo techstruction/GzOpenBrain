@@ -1,7 +1,7 @@
 {
   "agent:main:main": {
     "sessionId": "446ac300-59e5-4960-8b69-52e592ce6899",
-    "updatedAt": 1773510210578,
+    "updatedAt": 1773566285083,
     "systemSent": true,
     "abortedLastRun": false,
     "chatType": "direct",
@@ -69,7 +69,7 @@
     "contextTokens": 128000,
     "systemPromptReport": {
       "source": "run",
-      "generatedAt": 1773510207979,
+      "generatedAt": 1773566280233,
       "sessionId": "446ac300-59e5-4960-8b69-52e592ce6899",
       "sessionKey": "agent:main:main",
       "provider": "nvidia",
@@ -89,9 +89,9 @@
         "sandboxed": false
       },
       "systemPrompt": {
-        "chars": 26545,
+        "chars": 26512,
         "projectContextChars": 13552,
-        "nonProjectContextChars": 12993
+        "nonProjectContextChars": 12960
       },
       "injectedWorkspaceFiles": [
         {

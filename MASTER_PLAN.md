@@ -1,6 +1,7 @@
 # OpenBrain Master Plan
 
 > **Purpose:** The single source of truth for building the personal OpenBrain system. Track every stage, task, and decision here.
+> **Platform:** Zo Computer (centralized agentic repository). Affine has been fully decommissioned.
 > **Ledger:** All significant changes are logged in `UPDATE_LEDGER.md`.
 
 ---
@@ -30,7 +31,7 @@ Each domain shares the same internal sub-categories: **People · Projects · Ide
 | Layer | Tool | Notes |
 |---|---|---|
 | Input | Telegram | Single-drop inbox for all info |
-| Database | Affine (OSS) | Notion replacement, self-hosted |
+| Database | Zo Computer | Scalable agentic data repository |
 | Automation | Comfy UI | Zapier replacement |
 | Intelligence | Kimi k2.5 (Nvidia API) or Ollama (Qwen 3.5 on Windows server) | Low/no-cost AI layer |
 
@@ -43,8 +44,8 @@ Each domain shares the same internal sub-categories: **People · Projects · Ide
 | 1 | **Dropbox** | Telegram channel — single capture point |
 | 2 | **Sorter** | AI classifier — domain + category routing |
 | 3 | **Form** | Schema/data contract for structured entries |
-| 4 | **Filing Cabinet** | Affine databases (one per domain) |
-| 5 | **Receipt** | Audit trail / Inbox Log |
+| 4 | **Filing Cabinet** | Zo Computer repository |
+| 5 | **Receipt** | Audit trail / Inbox Log (Zo-managed) |
 | 6 | **Bouncer** | Quality gate — prevents noise entering storage |
 | 7 | **Tap on the Shoulder** | Proactive digests — daily / weekly / monthly |
 | 8 | **Fix Button** | Human-in-the-loop correction mechanism |
@@ -68,7 +69,7 @@ Each domain shares the same internal sub-categories: **People · Projects · Ide
 |---|---|---|---|---|
 | **Scribe** | Researcher | Web scraping, NotebookLM | The Researcher persona; gathering data and scoping problems. | A specific tool, though it uses NotebookLM. |
 | **Engineer** | Builder | Code syntax, Comfy UI flows | The Technical lead; designing automation logic and scripts. | A platform, though it uses Comfy UI. |
-| **Foreman** | Logistics | Telegram, Affine | The Logistics lead; moving data/materials between domains. | An integration service, though it use Affine/Telegram. |
+| **Foreman** | Logistics | Telegram, Zo Computer | The Logistics lead; moving data/materials between domains. | An integration service, though it use Zo/Telegram. |
 | **Architect** | Orchestrator | Blueprint review, Writer-Critic | The Blueprint holder; ensuring quality and orchestration. | A product, but the logic that coordinates the crew. |
 
 We are defining the "Core Utility Crew" now, and we define the "Specialist Sub-Contractors" later during Domain Expansion.
@@ -115,11 +116,11 @@ In the Techstruction metaphor: If you are building a generic office building, yo
 - [x] Register webhook: `python3 execution/telegram_webhook.py --register https://gobi.techstruction.co`
 - [ ] Send a test message to the bot and verify receipt response
 
-### Stage 2 — Storage Layer ✅
-- [x] Write `execution/write_to_affine.py` (Affine storage logic)
-- [x] Write `directives/filing_cabinet.md`
-- [x] **ACTION COMPLETED:** Added `AFFINE_API_TOKEN` and `WORKSPACE_ID` to `.env`
-- [x] Verify Affine API endpoint mapping in script
+### Stage 2 — Storage Layer ✅ (Shifted to Zo)
+- [x] ~~Write `execution/write_to_affine.py` (Affine storage logic)~~
+- [x] Update `directives/filing_cabinet.md` for Zo Computer
+- [x] **ACTION COMPLETED:** Removed Affine keys from `.env`
+- [ ] Initialize Zo Computer repositories
 
 ### Stage 3 — Quality Gate (Bouncer) ✅
 - [x] Write `execution/bouncer_check.py` (pass/flag logic)
@@ -150,7 +151,7 @@ In the Techstruction metaphor: If you are building a generic office building, yo
 - [x] Implement Writer-Critic loop between Scribe (Sorter) and Architect
 - [x] Implement Skills+Evidence layer (outputs must cite sources)
 - [x] Write `directives/architect.md`
-- [x] Test full end-to-end flow: Telegram → Sorter → Bouncer → Affine → Digest
+- [x] Test full end-to-end flow: Telegram → Sorter → Bouncer → Zo Computer → Digest
 - [x] Document known edge cases in directives
 
 ### Stage 8 — Hardening & Multi-domain Expansion 🔲
@@ -159,17 +160,30 @@ In the Techstruction metaphor: If you are building a generic office building, yo
 - [ ] Review and prune low-quality entries
 - [ ] Refine field schemas based on actual use
 - [ ] Document stable baseline in `UPDATE_LEDGER.md`
+ 
+ ### Stage 9 — Orchestration Upgrade (NemoClaw) ✅
+ - [x] Research NemoClaw capabilities and security (via NotebookLM)
+ - [x] Download NemoClaw to repo root
+ - [x] Deploy NemoClaw on MacBridge VPS (K3s Hybrid Sandbox with `hostPath` persistence)
+ - [x] Configure Cloudflare routing via OpenShell Traefik ingress (`nemoclaw-macbridge.techstruction.co`)
+ - [x] Enable Telegram channel (`@OG_Datadogs_bot`) — bypassed broken web dashboard pairing
+ - [x] Connect remote Ollama AI engine (`ollama-mbp.techstruction.co` / `llama3.1`)
+ - [x] Approve Telegram user pairing (`7645251071` / code `PRMA9PS4`)
+ - [x] Verify end-to-end: Telegram → NemoClaw Gateway → Llama 3.1 → Telegram reply
+ - [ ] Configure network guardrails (whitelist `applenotes.losguerreros.com`)
+ - [ ] Synchronize execution scripts as NemoClaw Skills
+ - [ ] Verify sandboxed orchestration loop with full pipeline
 
 ---
 
 ## ◼ MVP Loop (Minimum Viable Pipeline)
 
 ```
-Telegram → Sorter (Classify) → Bouncer (Quality Check) → Affine (File) → Daily Digest → Telegram
+Telegram → Sorter (Classify) → Bouncer (Quality Check) → Zo Computer (File) → Daily Digest → Telegram
 ```
 
 Build this first. Everything else is a module added on top.
 
 ---
 
-*Last updated: 2026-03-09 — Stages 1-3 code complete. Pipeline is functional pending .env keys.*
+*Last updated: 2026-03-23 — Stage 9 NemoClaw deployed and operational via Telegram + Ollama. Affine decommissioned → Zo Computer. memU retained.*

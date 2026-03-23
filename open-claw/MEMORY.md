@@ -48,3 +48,59 @@ Tags: trading_view, real_time_monitoring, chart_monitoring
 Add a note to the personal brain system.
 Tags: note, brain_system, admin_task
 
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path
+
+### [Computers] MCP Integration Test
+This is a test entry to verify dual-path storage to Affine and memU.
+Tags: test, mcp, dual_path

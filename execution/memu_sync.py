@@ -14,22 +14,32 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 def sync_to_openclaw(entry_json: str):
     """
-    Appends the classified entry to OpenClaw's internal MEMORY.md for context.
+    Sends the classified entry to the memU MCP server for storage.
     """
     try:
+        import requests
         entry = json.loads(entry_json)
-        memory_line = f"\n### [{entry.get('domain')}] {entry.get('title')}\n{entry.get('summary')}\nTags: {', '.join(entry.get('tags', []))}\n"
         
-        # We use docker exec to append to a file inside the container
-        # Note: In production, we'd use a shared volume or a Proper API.
-        cmd = [
-            "docker", "exec", "openbrain_openclaw",
-            "sh", "-c", f"echo {json.dumps(memory_line)} >> /root/.openclaw/MEMORY.md"
-        ]
+        # Use the container name if running in docker, or localhost if testing
+        host = os.getenv('MEMU_HOST', 'openbrain_memu')
+        port = os.getenv('MEMU_PORT', '8001')
+        url = f"http://{host}:{port}/store"
         
-        subprocess.run(cmd, check=True)
-        return True, "Synced to OpenClaw memory"
+        response = requests.post(url, json=entry, timeout=10)
+        response.raise_for_status()
+        
+        return True, "Synced to memU memory"
     except Exception as e:
+        # Fallback to local file append if container is unreachable and we are NOT in docker
+        if not os.getenv('DOCKER_CONTAINER'):
+             try:
+                memory_file = os.path.join(os.path.dirname(__file__), '..', 'open-claw', 'MEMORY.md')
+                memory_line = f"\n### [{entry.get('domain')}] {entry.get('title')}\n{entry.get('summary')}\nTags: {', '.join(entry.get('tags', []))}\n"
+                with open(memory_file, 'a') as f:
+                    f.write(memory_line)
+                return True, "Synced to local memory file (fallback)"
+             except:
+                pass
         return False, str(e)
 
 if __name__ == "__main__":
