@@ -104,18 +104,40 @@ def process_message(chat_id, text):
             log.error(f"Dispatch error: {e}")
         return
 
-    # 4. Store
+    # 4. Store (Dual-Path)
+    stored_affine = False
+    stored_memu = False
+    
+    # Path A: Affine (Database for Humans)
     try:
+        log.info("Path A: Filing to Affine...")
         res = run_script('write_to_affine.py', json.dumps(classified))
-        stored = res.get('success', False)
+        stored_affine = res.get('success', False)
     except Exception as e:
-        log.error(f"Storage error: {e}")
-        stored = False
+        log.error(f"Affine storage error: {e}")
+
+    # Path B: memU (Memory for Agents)
+    try:
+        log.info("Path B: Syncing to memU memory...")
+        # For now, we use the existing memu_sync.py logic which is compatible with the memU MCP backend
+        res = run_script('memu_sync.py', json.dumps(classified))
+        stored_memu = res.get('success', False)
+    except Exception as e:
+        log.error(f"memU storage error: {e}")
 
     # 5. Receipt
     domain = classified.get('domain', 'Clan')
     emoji = {'Capital':'💰','Computers':'💻','Cars':'🚗','Cannapy':'🌿','Clan':'👨‍👩‍👧'}.get(domain, '📁')
-    status = "✅ Filed" if stored else "🗂 Classified (Store error)"
+    
+    if stored_affine and stored_memu:
+        status = "✅ Filed to OpenBrain & memU"
+    elif stored_affine:
+        status = "✅ Filed to OpenBrain (memU error)"
+    elif stored_memu:
+        status = "✅ Synced to memU (OpenBrain error)"
+    else:
+        status = "❌ Storage Error"
+        
     receipt = f"{emoji} *{domain}* → {classified.get('category','?')}\n📌 *{classified.get('title','Note')}*\n{status}"
     send_message(chat_id, receipt)
 

@@ -6,7 +6,7 @@
 
 ## The 5 Domains
 
-All information in OpenBrain is organized under five top-level domains. Each domain is a separate workspace in Affine and uses the same internal sub-category structure.
+All information in OpenBrain is organized under five top-level domains. Each domain is a separate repository in **Zo Computer** and uses the same internal sub-category structure.
 
 | Domain | Alias | Scope |
 |---|---|---|
@@ -55,10 +55,10 @@ Defines the required structure for all classified entries. Kept minimal (3–5 f
 ```
 
 ### 4. Filing Cabinet (Storage)
-**Tool:** Affine (self-hosted, open-source)
-**What it does:** Stores classified entries in the correct domain database.
-**Script:** `execution/write_to_affine.py`
-**One Affine workspace per domain. One database per sub-category.**
+**Tool:** Zo Computer (Scalable agentic data repository)
+**What it does:** Stores classified entries in the correct domain repository.
+**Note:** Built-in functions handle agents and various datasets out of the box.
+**One Zo repository per domain. One dataset per sub-category.**
 
 ### 5. Receipt (Audit Trail)
 Every item classified and stored generates an entry in the relevant domain's **Inbox Log** table. This is the paper trail.
@@ -131,7 +131,7 @@ GzOpenBrain/
 │   └── meta_agent.md       (Stage 7)
 ├── execution/              # Deterministic Python scripts
 │   ├── classify_message.py
-│   ├── write_to_affine.py
+│   ├── write_to_zo.py      (Planned)
 │   ├── bouncer_check.py
 │   ├── generate_digest.py
 │   └── apply_correction.py

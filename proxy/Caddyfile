@@ -2,7 +2,7 @@
     auto_https off
 }
 
-:80 {
+:8818 {
     log {
         output stdout
     }
@@ -18,14 +18,4 @@
         }
     }
 
-    @affine {
-        host affine-macbridge.techstruction.co
-    }
-    handle @affine {
-        header X-Caddy-Debug "AFFINE"
-        reverse_proxy affine_server:3010 {
-            header_up X-Forwarded-Proto https
-            header_up X-Forwarded-Host {host}
-        }
-    }
 }
