@@ -104,3 +104,19 @@ Tags: test, mcp, dual_path
 ### [Computers] MCP Integration Test
 This is a test entry to verify dual-path storage to Affine and memU.
 Tags: test, mcp, dual_path
+
+### [Clan] Parse Error
+AI output was not valid JSON.
+Tags: 
+
+### [Computers] ComfyUI Integration for OneBrain Agentic System
+Proposal to investigate integrating ComfyUI as a component within the OneBrain agentic system project.
+Tags: #Comp, #Ideas, #AI, #OneBrain, #AgenticSystems, #ComfyUI
+
+### [Computers] ComfyUI Integration for OneBrain Agentic System
+Proposing ComfyUI as a architectural component within the OneBrain agentic system project requiring further technical exploration.
+Tags: #Comp, #Ideas, #AI, #Sys, #Architecture
+
+### [~ CARS ~] Automotive Dashboard Concept
+Concept for a dashboard interface, monitoring system, or data visualization tool designed specifically for vehicle applications or car metrics.
+Tags: #Cars, #Ideas, #Dashboard, #UI, #UX

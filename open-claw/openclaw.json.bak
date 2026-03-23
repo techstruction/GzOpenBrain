@@ -1,131 +1,71 @@
 {
   "meta": {
-    "lastTouchedVersion": "2026.1.24-3",
-    "lastTouchedAt": "2026-01-27T21:00:56.246Z"
+    "lastTouchedVersion": "2026.3.11",
+    "lastTouchedAt": "2026-03-23T20:24:50.453Z"
   },
   "models": {
     "providers": {
       "ollama": {
-        "baseUrl": "http://host.docker.internal:11434/v1",
+        "baseUrl": "https://ollama-mbp.techstruction.co",
         "apiKey": "ollama-local",
-        "models": [
-          {
-            "id": "qwen3-coder:30b",
-            "name": "Qwen 3 Coder 30B",
-            "reasoning": false,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 32768,
-            "maxTokens": 8192
-          }
-        ],
-        "api": "openai-completions"
-      },
-      "nvidia": {
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
-        "apiKey": "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",
-        "models": [
-          {
-            "id": "meta/llama-3.1-8b-instruct",
-            "name": "Llama 3.1 8B (Nvidia)",
-            "contextWindow": 128000
-          }
-        ],
-        "api": "openai-completions"
+        "api": "ollama",
+        "models": []
       }
     }
   },
   "agents": {
     "defaults": {
       "model": {
-        "primary": "nvidia/meta/llama-3.1-8b-instruct"
+        "primary": "ollama/llama3.1"
       },
-      "maxConcurrent": 4,
-      "subagents": {
-        "maxConcurrent": 8
-      }
-    }
-  },
-  "messages": {
-    "ackReactionScope": "group-mentions"
-  },
-  "tools": {
-    "elevated": {
-      "enabled": true,
-      "allowFrom": {
-        "telegram": [
-          "*"
-        ]
-      }
-    },
-    "web": {
-      "search": {
-        "apiKey": "BSA4bF1HEImSWkT_wbXomOvqVlAc1cm"
+      "models": {
+        "anthropic/ollama:llama3.1": {},
+        "ollama/llama3.1": {}
+      },
+      "compaction": {
+        "mode": "safeguard"
       }
     }
   },
   "commands": {
     "native": "auto",
-    "nativeSkills": "auto"
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
   },
   "channels": {
     "telegram": {
       "enabled": true,
-      "dmPolicy": "open",
-      "allowFrom": [
-        "*"
-      ],
-      "botToken": "8729144210:AAEFgas5T3ID6dyGano7_DebrK59bUDqxcY",
-      "groupPolicy": "open",
-      "streaming": "partial",
-      "groups": {
-        "*": {
-          "requireMention": true
-        }
-      }
+      "dmPolicy": "pairing",
+      "botToken": "8718754783:AAEyw6y0sfyFff1lXY6TpbJRdojBLCA3-6k",
+      "groupPolicy": "allowlist",
+      "streaming": "partial"
     }
   },
   "gateway": {
-    "port": 18789,
-    "mode": "local",
     "bind": "lan",
-    "trustedProxies": [
-      "172.80.0.0/16",
-      "130.166.192.54"
-    ],
     "controlUi": {
       "allowedOrigins": [
         "http://localhost:18789",
         "http://127.0.0.1:18789",
-        "http://gobi-gwd-page.techstruction.co",
-        "https://gobi-gwd-page.techstruction.co",
-        "http://192.168.1.87:18789"
-      ],
-      "allowInsecureAuth": true
+        "https://nemoclaw-macbridge.techstruction.co",
+        "https://nemoclaw-macbridge.techstruction.co/"
+      ]
     },
     "auth": {
-      "mode": "token",
-      "token": "GOBI_CLAW_SECRET_2026"
+      "mode": "password",
+      "token": "78f92e40bb69dee9face8c5bef012238c0224e76dbf654e4",
+      "password": "openclaw123"
     }
   },
   "plugins": {
     "entries": {
+      "@openclaw/telegram": {
+        "enabled": true
+      },
       "telegram": {
         "enabled": true
       }
     }
-  },
-  "wizard": {
-    "lastRunAt": "2026-01-27T21:00:56.240Z",
-    "lastRunVersion": "2026.1.24-3",
-    "lastRunCommand": "doctor",
-    "lastRunMode": "local"
   }
 }

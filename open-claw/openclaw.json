@@ -1,24 +1,25 @@
 {
   "meta": {
     "lastTouchedVersion": "2026.3.11",
-    "lastTouchedAt": "2026-03-15T06:48:10.481Z"
+    "lastTouchedAt": "2026-03-23T20:25:57.645Z"
   },
   "wizard": {
-    "lastRunAt": "2026-03-15T06:49:32.482788Z",
+    "lastRunAt": "2026-03-23T20:25:57.593Z",
     "lastRunVersion": "2026.3.11",
-    "lastRunCommand": "doctor",
+    "lastRunCommand": "onboard",
     "lastRunMode": "local"
   },
   "models": {
+    "mode": "merge",
     "providers": {
       "ollama": {
-        "baseUrl": "http://host.docker.internal:11434/v1",
-        "apiKey": "ollama-local",
-        "api": "openai-completions",
+        "baseUrl": "https://ollama-mbp.techstruction.co",
+        "apiKey": "OLLAMA_API_KEY",
+        "api": "ollama",
         "models": [
           {
-            "id": "qwen3-coder:30b",
-            "name": "Qwen 3 Coder 30B",
+            "id": "glm-4.7-flash",
+            "name": "glm-4.7-flash",
             "reasoning": false,
             "input": [
               "text"
@@ -29,20 +30,56 @@
               "cacheRead": 0,
               "cacheWrite": 0
             },
-            "contextWindow": 32768,
+            "contextWindow": 128000,
             "maxTokens": 8192
-          }
-        ]
-      },
-      "nvidia": {
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
-        "apiKey": "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",
-        "api": "openai-completions",
-        "models": [
+          },
           {
-            "id": "meta/llama-3.1-8b-instruct",
-            "name": "Llama 3.1 8B (Nvidia)",
-            "contextWindow": 128000
+            "id": "llama3.1:latest",
+            "name": "llama3.1:latest",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 131072,
+            "maxTokens": 8192
+          },
+          {
+            "id": "qwen3.5:9b",
+            "name": "qwen3.5:9b",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 8192
+          },
+          {
+            "id": "llama3.1",
+            "name": "llama3.1",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 128000,
+            "maxTokens": 8192
           }
         ]
       }
@@ -51,32 +88,20 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "nvidia/meta/llama-3.1-8b-instruct"
+        "primary": "ollama/llama3.1"
       },
-      "maxConcurrent": 4,
-      "subagents": {
-        "maxConcurrent": 8
+      "models": {
+        "anthropic/ollama:llama3.1": {},
+        "ollama/llama3.1": {}
+      },
+      "workspace": "/sandbox/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
       }
     }
   },
   "tools": {
-    "web": {
-      "search": {
-        "provider": "brave",
-        "apiKey": "BSA4bF1HEImSWkT_wbXomOvqVlAc1cm"
-      }
-    },
-    "elevated": {
-      "enabled": true,
-      "allowFrom": {
-        "telegram": [
-          "*"
-        ]
-      }
-    }
-  },
-  "messages": {
-    "ackReactionScope": "group-mentions"
+    "profile": "coding"
   },
   "commands": {
     "native": "auto",
@@ -84,48 +109,50 @@
     "restart": true,
     "ownerDisplay": "raw"
   },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
   "channels": {
     "telegram": {
       "enabled": true,
-      "dmPolicy": "open",
-      "botToken": "8729144210:AAEFgas5T3ID6dyGano7_DebrK59bUDqxcY",
-      "groups": {
-        "*": {
-          "requireMention": true
-        }
-      },
-      "allowFrom": [
-        "*"
-      ],
-      "groupPolicy": "open",
+      "dmPolicy": "pairing",
+      "botToken": "8718754783:AAEyw6y0sfyFff1lXY6TpbJRdojBLCA3-6k",
+      "groupPolicy": "allowlist",
       "streaming": "partial"
     }
   },
   "gateway": {
     "port": 18789,
     "mode": "local",
-    "bind": "lan",
+    "bind": "loopback",
     "controlUi": {
       "allowedOrigins": [
         "http://localhost:18789",
         "http://127.0.0.1:18789",
-        "http://gobi-gwd-page.techstruction.co",
-        "https://gobi-gwd-page.techstruction.co",
-        "http://192.168.1.87:18789"
-      ],
-      "allowInsecureAuth": true
+        "https://nemoclaw-macbridge.techstruction.co",
+        "https://nemoclaw-macbridge.techstruction.co/"
+      ]
     },
     "auth": {
       "mode": "token",
-      "token": "GOBI_CLAW_SECRET_2026"
+      "token": "e1c0106e2d3ee22bf6880b6bbfdd3f5a39d8cc94633dee5a",
+      "password": "openclaw123"
     },
-    "trustedProxies": [
-      "172.80.0.0/16",
-      "130.166.192.54"
-    ]
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    }
   },
   "plugins": {
     "entries": {
+      "@openclaw/telegram": {
+        "enabled": true
+      },
       "telegram": {
         "enabled": true
       }
