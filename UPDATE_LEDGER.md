@@ -17,6 +17,22 @@
 
 **Change types:** `FIX` · `FEATURE` · `ARCHITECTURE` · `DIRECTIVE` · `SCHEMA` · `CONFIG`
 
+### [2026-03-28] — ARCHITECTURE — SQLite DB + GOBI Pipeline Rebuild
+- **What changed:**
+  - Replaced all per-domain JSONL/CSV files with a single SQLite database (`openbrain.db`) on MacBridge at `/home/tonyg/GzOpenBrain/openbrain.db`
+  - New `execution/db.py` — unified data access layer (CRUD, domain-scoped queries, no direct DB writes elsewhere)
+  - Rewrote `execution/telegram_webhook.py` — removes all Affine references; new flow: inbox_log → Sorter → Bouncer → items table → Telegram receipt
+  - Updated `execution/classify_message.py` — KIMI_API_KEY → NVIDIA_API_KEY, model → meta/llama-3.3-70b-instruct, domain name normalization
+  - New `execution/migrate_to_db.py` — one-time migration of CAPITAL/COMPUTERS/CARS/CANNAPY/CLAN JSONL + CSV → SQLite (38 records)
+  - Datasette deployed as `gobi_datasette` Docker container on MacBridge port 8922, public at `data.techstruction.co`
+  - `.env.example` updated: KIMI_* → NVIDIA_*, Affine vars removed, GOBI bot + SQLite path added
+  - OPENBRAIN alias folders (COMP/CAP/CANN) deleted from Zo — canonical 5C folders remain
+  - `directives/sorter.md` and `directives/bouncer.md` updated to reflect SQLite routing
+- **Why:** CSV/JSONL per domain made cross-domain queries impossible and VP agent access inconsistent. SQLite + Datasette provides a single source of truth with zero-config table views for human review.
+- **Directive updated:** Yes — `directives/sorter.md`, `directives/bouncer.md`
+- **Tested:** Yes — End-to-end: sent "I have an idea for Claude code based market agent" to @GzOpenBrainInbox_bot → classified COMPUTERS/Ideas → "Claude Code Market Agent" → filed to items table → visible at data.techstruction.co
+
+
 ### [2026-03-23] — ARCHITECTURE — NemoClaw Persistent Deployment Complete (K3s Hybrid + Telegram + Ollama)
 - **What changed:**
   - **Deployment (3 failed strategies, 1 success):**
