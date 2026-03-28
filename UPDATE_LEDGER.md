@@ -17,6 +17,19 @@
 
 **Change types:** `FIX` · `FEATURE` · `ARCHITECTURE` · `DIRECTIVE` · `SCHEMA` · `CONFIG`
 
+### [2026-03-28] — ARCHITECTURE — Directus deployed; all GOBI infra migrated to Zo
+- **What changed:**
+  - GOBI webhook migrated from MacBridge Docker → Zo supervisord (`gobi-webhook` program, port 8769)
+  - SQLite DB canonical location moved to Zo: `/home/workspace/OPENBRAIN/openbrain.db`
+  - Datasette replaced by Directus — deployed at `/home/workspace/directus/` on Zo via npm/Node.js
+  - Directus runs via supervisord `directus` program on port 8922, public at `data.techstruction.co`
+  - Directus bootstrapped with SQLite: `directus_*` system tables created alongside `items`, `inbox_log`, `digests`
+  - All three collections auto-detected and CRUD-enabled in Directus admin UI
+  - MacBridge `openbrain_agent` container now idle — can be stopped
+- **Why:** Architecture required Zo to be the cloud brain for all data/UI; MacBridge is on-prem only
+- **Directive updated:** No directive changes — operational deployment only
+- **Tested:** `https://gobi.techstruction.co/health` → `{"status":"ok"}` ✅; `https://data.techstruction.co/server/health` → `{"status":"ok"}` ✅; items query via Directus API returns correct data ✅
+
 ### [2026-03-28] — ARCHITECTURE — SQLite DB + GOBI Pipeline Rebuild
 - **What changed:**
   - Replaced all per-domain JSONL/CSV files with a single SQLite database (`openbrain.db`) on MacBridge at `/home/tonyg/GzOpenBrain/openbrain.db`
