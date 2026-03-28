@@ -1,6 +1,6 @@
 # Directive: Bouncer Agent
 
-> **Last updated:** 2026-03-09
+> **Last updated:** 2026-03-28
 > **Script:** `execution/bouncer_check.py`
 > **Stage:** 3 — Quality Gate
 
@@ -8,17 +8,16 @@
 
 ## Purpose
 
-The Bouncer act as a quality filter between classification and storage. It ensures that only high-quality, well-defined information makes it into the primary domain databases, while noise or ambiguous notes are flagged for review.
+The Bouncer acts as a quality filter between classification (Sorter) and storage (SQLite). Ensures only well-defined information is promoted to the `items` table; noise stays in `inbox_log` for human review in Datasette.
 
 ## Inputs
 
 | Input | Source | Notes |
 |---|---|---|
-| `entry` | Sorter JSON | The output from `classify_message.py` |
+| `entry` | Sorter JSON | Output from `classify_message.py` |
 
 ## Outputs
 
-JSON object (stdout):
 ```json
 {
   "decision": "pass|flag",
@@ -28,29 +27,31 @@ JSON object (stdout):
 
 ## Logic Gate Criteria
 
-The Bouncer "Flags" an entry if:
-1.  **Quality Score is 'low'**: Explicitly identified as low value by the Sorter.
-2.  **Generic Fallback**: The domain is 'Clan' and category is 'Inbox Log' (indicates Sorter couldn't find a specific bucket).
-3.  **Vague Summary**: The generated summary is fewer than 3 words.
+**FLAG if any of:**
+1. `quality_score == "low"` — explicitly identified as low value by Sorter
+2. `summary` has fewer than 3 words — too vague
+3. `domain == "CLAN"` AND `category == "Admin"` — fallback classification, needs review
+
+**PASS otherwise.**
+
+## Storage Routing
+
+| Decision | Action |
+|---|---|
+| PASS | `db.promote_to_items()` → row created in `items` table; `inbox_log.processed=1` |
+| FLAG | `db.flag_inbox()` → stays in `inbox_log` with `bouncer_decision='flag'`; visible in Datasette unprocessed view |
+
+Human reviews flagged items at `https://data.techstruction.co/openbrain/inbox_log?processed=0`
 
 ## Usage
 
 ```bash
-# Check a classification result
-python3 execution/bouncer_check.py '{"domain": "Capital", "quality_score": "high", "summary": "Bitcoin investment strategy"}'
+python3 execution/bouncer_check.py '{"domain": "CAPITAL", "quality_score": "high", "summary": "Bitcoin investment strategy"}'
 ```
-
-## Implementation Flow
-
-1.  **Sorter** classifies message.
-2.  **Foreman** (webhook server) passes JSON to Bouncer.
-3.  If **PASS** -> Proceed to `write_to_affine.py` in the specific domain/category.
-4.  If **FLAG** -> File in the domain's "Inbox Log" table with the flag metadata.
 
 ## Self-Heal Protocol
 
-When quality logic needs adjustment:
-1.  Update `evaluate_quality()` in `execution/bouncer_check.py`.
-2.  Test with various Sorter outputs.
-3.  Update this directive's **Logic Gate Criteria**.
-4.  Log the change in `UPDATE_LEDGER.md`.
+1. Update `evaluate_quality()` in `execution/bouncer_check.py`
+2. Test with representative Sorter outputs
+3. Update **Logic Gate Criteria** above
+4. Append to `UPDATE_LEDGER.md`
