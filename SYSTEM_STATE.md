@@ -49,7 +49,7 @@ Team name: **"My Mans and Them"**
 | Service | Public URL | Internal | Machine | Port | Status |
 |---------|-----------|----------|---------|------|--------|
 | GOBI webhook | `https://gobi.techstruction.co` | localhost:8769 | Zo | 8769 | ✅ Live |
-| Directus UI | `https://data.techstruction.co` | localhost:8922 | Zo | 8922 | ✅ Live |
+| Directus UI | `https://data.techstruction.co` | localhost:8922 | Zo | 8922 | ✅ Live — program `directus` in `/root/.zo/supervisord-custom.conf` |
 | Ollama | `https://ollama-mbp.techstruction.co` | localhost:11434 | MacBridge | 11434 | ✅ Live |
 | memU (MCP) | `https://memu-macbridge.techstruction.co` | localhost:8001 | MacBridge | 8001 | ✅ Live |
 | NemoClaw gateway | internal only | localhost:18789 | MacBridge K3s | 18789 | ✅ Live — never expose publicly |
