@@ -28,19 +28,19 @@
 | Agent Name | Persona | System | Telegram Bot | Bot ID | AI Model | Status |
 |-----------|---------|--------|-------------|--------|----------|--------|
 | Zo native | SAM (Security Agent Manager) | Zo Computer (always-on cloud) | TBD — existing Zo bot | TBD | Zo native | ⚠️ Rules migration needed |
-| ZoClaw | Mmat | OpenClaw v2026.3.24 on Zo | `@OG_Mmat_bot` | 8382972952 | llama-3.1-8b-instruct (Nvidia) | ✅ Live |
-| NemoClaw | Adam | OpenClaw v2026.3.11 on MacBridge K3s | `@OG_Datadogs_bot` | TBD | Ollama llama3.1 | ✅ Live — Adam rules pending |
+| ZoClaw | Mmat | OpenClaw v2026.3.24 on Zo | `@OG_Mmat_bot` | 8382972952 | nvidia/llama-3.1-8b via Rate Queue proxy (127.0.0.1:18792) | ✅ Live |
+| NemoClaw | Adam | OpenClaw v2026.3.11 on MacBridge K3s | `@OG_Datadogs_bot` | TBD | nvidia/llama-3.1-8b via Rate Queue proxy | ✅ Live — policy v10, tools=full |
 
 ### 5C VP Sub-Agents (Mmat's team — ZoClaw)
 Team name: **"My Mans and Them"**
 
 | Domain | VP Name | YAML | Status |
 |--------|---------|------|--------|
-| CAPITAL | TBD | `agents/openclaw-zo/capital-vp.yaml` | ❌ Not defined |
-| COMPUTERS | TBD | `agents/openclaw-zo/computers-vp.yaml` | ❌ Not defined |
-| CARS | TBD | `agents/openclaw-zo/cars-vp.yaml` | ❌ Not defined |
-| CANNAPY | TBD | `agents/openclaw-zo/cannapy-vp.yaml` | ❌ Not defined |
-| CLAN | TBD | `agents/openclaw-zo/clan-vp.yaml` | ❌ Not defined |
+| CAPITAL | Vinny the Vault | `agents/openclaw-zo/vault.yaml` | ✅ Defined |
+| COMPUTERS | Rigs | `agents/openclaw-zo/rigs.yaml` | ✅ Defined |
+| CARS | Slick | `agents/openclaw-zo/slick.yaml` | ✅ Defined |
+| CANNAPY | Doc Flora (Flora from the Field) | `agents/openclaw-zo/flora.yaml` | ✅ Defined |
+| CLAN | K / Kira the Keeper | `agents/openclaw-zo/kira.yaml` | ✅ Defined |
 
 ---
 
@@ -49,13 +49,16 @@ Team name: **"My Mans and Them"**
 | Service | Public URL | Internal | Machine | Port | Status |
 |---------|-----------|----------|---------|------|--------|
 | GOBI webhook | `https://gobi.techstruction.co` | localhost:8769 | Zo | 8769 | ✅ Live |
-| Directus UI | `https://data.techstruction.co` | localhost:8922 | Zo | 8922 | ✅ Live — program `directus` in `/root/.zo/supervisord-custom.conf` |
-| Ollama | `https://ollama-mbp.techstruction.co` | localhost:11434 | MacBridge | 11434 | ✅ Live |
+| Directus UI | `https://data.techstruction.co` | localhost:8922 | Zo | 8922 | ✅ Live — supervisord-custom.conf `directus` |
+| Directus HTTPS Proxy | internal | localhost:8923 | Zo | 8923 | ✅ Live — TLS wrapper, used by adam sandbox |
+| ACOM webapp | SSH tunnel only | localhost:7842 | Zo | 7842 | ✅ Live — `ssh -L 7842:localhost:7842 zo-computer -N` |
+| Rate Queue Proxy | internal only | 127.0.0.1:18792 | Zo | 18792 | ✅ Live — all NVIDIA calls routed here, 36 RPM cap |
+| Zo Watchdog | internal | — | Zo | — | ✅ Live — supervisord, `/root/zo-watchdog.py` |
+| Ollama | `https://ollama-mbp.techstruction.co` | localhost:11434 | MacBridge | 11434 | ✅ Live (infra only — not primary agent model) |
 | memU (MCP) | `https://memu-macbridge.techstruction.co` | localhost:8001 | MacBridge | 8001 | ✅ Live |
 | NemoClaw gateway | internal only | localhost:18789 | MacBridge K3s | 18789 | ✅ Live — never expose publicly |
 | MacBridge Caddy proxy | internal | localhost:8818 | MacBridge | 8818 | ✅ Live |
-| Agent Org Chart webapp | via MacBridge relay | localhost:7842 | Zo | 7842 | ✅ Live |
-| Nvidia API | `https://integrate.api.nvidia.com/v1` | — | Cloud | — | ✅ Live |
+| Nvidia API | `https://integrate.api.nvidia.com/v1` | — | Cloud | — | ✅ Live (via Rate Queue on Zo) |
 
 ---
 
@@ -213,14 +216,26 @@ User → Telegram @GzOpenBrainInbox_bot
 
 ---
 
-## Open Items for Agent Org Chart Project
+## Open Items
 
-- [ ] Name the 5 VP sub-agents (one per 5C domain)
-- [ ] Author ZoClaw Rules (`systems/openclaw-zo/rules.md`) — Mmat persona + VP team
-- [ ] Author NemoClaw Rules (`systems/nemoclaw/rules.md`) — Adam persona
-- [ ] Author Zo native Rules (`systems/zo/rules.md`) — SAM persona
-- [ ] Create agent YAML files in `agents/openclaw-zo/` for Mmat + 5 VPs
-- [ ] Create `agents/nemoclaw/adam.yaml`
-- [ ] Decide: which agent/bot handles the `/fix` command?
-- [ ] Decide: does the Sorter route classified content to the VP's inbox or just to the shared DB?
-- [ ] Write `workflows/thoughts-and-ideas/SPEC.md`
+- [ ] **rclone OAuth** — run `rclone config` on MacBridge to authorize OneDrive for adam backup
+- [ ] **Zo supervisord persistence** — re-add `[include]` after every Zo restart (no permanent fix yet)
+- [ ] **Zo native SAM rules** — `systems/zo/rules.md` still pending
+- [ ] **Cross-system workflow** — mmat delegates to adam; not yet tested end-to-end
+- [ ] **SOUL.md on Zo** — personality/tone guidance for Zo native agent
+- [ ] **NemoClaw policy durability** — on sandbox recreation, `adam-sandbox.yaml` must be re-applied; explore hook
+- [ ] **`/fix` command routing** — which agent handles Bouncer-flagged items?
+- [ ] **Thoughts & Ideas workflow spec** — `workflows/thoughts-and-ideas/SPEC.md`
+
+## Recently Completed (via visual-agent-org-chart-tool, 2026-03-31)
+
+- [x] VP sub-agents named: Vinny the Vault, Rigs, Slick, Doc Flora, Kira
+- [x] ACOM webapp (Map + Projects + Agents + Rate Queue + Admin)
+- [x] Rate Queue Proxy on Zo (36 RPM NVIDIA cap, centralized API key)
+- [x] ZoClaw (mmat) fully configured — NVIDIA inference, Telegram polling, Directus MCP
+- [x] NemoClaw (adam) fully configured — NVIDIA inference, full tools, sandbox SSH relay to Zo
+- [x] Adam health monitor + daily CEO brief + backup system
+- [x] Zo watchdog (service restarts + container keepalive)
+- [x] Directus roles + API tokens for both agents; Directus MCP (20 tools each)
+- [x] New openbrain.db tables: agent_registry, projects, agent_checkins, skills
+- [x] Skills: project-manage, openbrain-interact, project-create, project-checkin, project-query
