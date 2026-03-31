@@ -17,6 +17,35 @@
 
 **Change types:** `FIX` · `FEATURE` · `ARCHITECTURE` · `DIRECTIVE` · `SCHEMA` · `CONFIG`
 
+### [2026-03-18] — ARCHITECTURE — NemoClaw Transition & Notes Security
+- **What changed:**
+  - Began transition from HiClaw to NemoClaw for stage 9 orchestration.
+  - Downloaded `nemoclaw.sh` installer and cloned `NemoClaw` repository to repo root.
+  - Updated `MASTER_PLAN.md` Stage 9 to reflect NemoClaw and new security policies.
+- **Why:** Replaced HiClaw with NemoClaw as requested. NotebookLM revealed requirement for network guardrails (whitelisting `applenotes.losguerreros.com`) for notes access.
+- **Directive updated:** Yes — `MASTER_PLAN.md`
+- **Tested:** Yes — Verified download and clone.
+
+### [2026-03-18] — ARCHITECTURE — Decommissioned HiClaw Installation
+- **What changed:**
+  - Removed `hiclaw-manager` container and installation files from MacBridge VPS.
+  - Reverted `Caddyfile` to remove HiClaw/Matrix routing.
+  - Deleted local `HICLAW_USER_MANUAL.md` and `hiclaw_config.json`.
+  - Reverted `MASTER_PLAN.md` Stage 9 to planned status.
+- **Why:** The HiClaw framework proved too complex/challenging for current project needs; reverted to the standard 3-layer architecture.
+- **Directive updated:** Yes — `directives/agent_roster.md` (reverted logically)
+- **Tested:** Yes — Verified container removal and Caddy reload on the server.
+
+### [2026-03-15] — ARCHITECTURE — Initialized HiClaw Migration
+- **What changed:**
+  - Created `HiClaw-upgrade` branch.
+  - Drafted `hiclaw_config.json` defining Architect (Manager) and Scribe, Engineer, Foreman (Workers).
+  - Created `execution/hi_claw_skill_sync.py` and synced 16 core scripts to `open-claw/skills/openbrain_core`.
+  - Created `execution/migrate_to_hiclaw.py` and synced codebase to `macbridge` VPS.
+- **Why:** To evolve from a custom 3-layer orchestration to a native Manager-Worker model with Matrix-based observability and human-in-the-loop coordination.
+- **Directive updated:** Yes — `directives/agent_roster.md` (role mapping)
+- **Tested:** Yes — Skill synchronization verified; VPS filesystem sync successful.
+
 ### [2026-03-15] — FEATURE — Optimized Excalidraw Skill Triggering
 - **What changed:**
   - Updated `SKILL.md` frontmatter with a more "pushy" description to override built-in `canvas` tools.
@@ -69,7 +98,7 @@
 - **What changed:** 
   - Installed **OrbStack** as the Docker runtime.
   - Deployed self-hosted **Affine** instance using Docker Compose on port `3110`.
-  - Configured production workspace `GzOpenBrain` (`1142150e-fc29-4e8e-b5af-181cd8a7283c`).
+  - Configured production workspace `GzOpenBrain` (`00925943-6237-425b-b3a2-5641b75f568f`).
   - Set up `tony.guerrero@gmail.com` as primary Admin and enabled cloud sync.
   - Linked `tony@openbrain.local` as Collaborator to grant existing API token access.
   - Updated main `.env` with `AFFINE_API_URL`, `AFFINE_API_TOKEN`, and `AFFINE_WORKSPACE_ID`.
@@ -87,19 +116,14 @@
 
 ### [2026-03-09] — ARCHITECTURE — Initial OpenBrain system design established
 - **What changed:** Created `MASTER_PLAN.md`, `UPDATE_LEDGER.md`, `directives/openbrain_principles.md`, `directives/system_architecture.md`, `directives/agent_roster.md`
-- **Why:** Synthesized research from Apple Notes and NotebookLM to define the full OpenBrain architecture.
-- **Key decisions:**
-  - Five-domain hierarchy: Capital, Computers, Cars, Cannapy, Clan
-  - Tech stack: Telegram + Affine (OSS) + Comfy UI + Kimi k2.5 / Ollama (Qwen 3.5)
-  - Eight building blocks: Dropbox, Sorter, Form, Filing Cabinet, Receipt, Bouncer, Tap on the Shoulder, Fix Button
-  - Principle-based guidance > rule-based guidance
-  - Self-annealing directive: fix → test → update directive
 - **Directive updated:** Yes — `directives/openbrain_principles.md` (new)
 - **Tested:** N/A — foundation stage
 
 ---
 
 *Entries above this line are the most recent.*
+2026-03-19: NemoClaw manual installation and migration complete. Dashboard reachable via 18790 bridge and Cloudflare tunnel.
+2026-03-19: NemoClaw manual installation and migration complete. Dashboard reachable via NodePort 30799.
 
 ### [2026-03-31] — FIX — Health Monitor Digest Throttle (last_ok_digest_ts carry-forward)
 - **What changed:** NemoClaw/scripts/adam-health-monitor.py — new_state dict was constructed without carrying forward last_ok_digest_ts or active_incidents from loaded state. The mandatory first save_state() call wiped them every cron run, so elapsed was always infinite and an OK digest fired every 5 minutes instead of every 4 hours.
