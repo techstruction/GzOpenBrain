@@ -100,3 +100,21 @@
 ---
 
 *Entries above this line are the most recent.*
+
+### [2026-03-31] — FIX — Health Monitor Digest Throttle (last_ok_digest_ts carry-forward)
+- **What changed:** NemoClaw/scripts/adam-health-monitor.py — new_state dict was constructed without carrying forward last_ok_digest_ts or active_incidents from loaded state. The mandatory first save_state() call wiped them every cron run, so elapsed was always infinite and an OK digest fired every 5 minutes instead of every 4 hours.
+- **Why:** Any field used for inter-run throttle tracking must be in new_state at construction, not just set on the success path. Quiet hours (09:00-14:00 UTC) and 4h minimum were coded correctly but never engaged.
+- **Directive updated:** No
+- **Tested:** Yes — confirmed next digest suppressed with "next digest in 239m" log line.
+
+### [2026-03-31] — FIX — check_zo_services() RC=3 False Failure
+- **What changed:** NemoClaw/scripts/adam-health-monitor.py — zo_ssh() only accepted RC=0 as success. supervisorctl status returns RC=3 when any service is non-RUNNING, causing all Zo services to show as "unknown" whenever a single service was FATAL. Also filtered spurious INFO: lines from supervisord include-file logging.
+- **Why:** supervisorctl exit code semantics: RC=0 all RUNNING, RC=3 some not RUNNING (SSH succeeded, command ran fine).
+- **Directive updated:** No
+- **Tested:** Yes — all 12 Zo services now report correctly.
+
+### [2026-03-31] — FEATURE — Zo Watchdog Service
+- **What changed:** Created /root/zo-watchdog.py on Zo Computer. Registered as supervisord program in /root/.zo/supervisord-custom.conf. Every 3 min: checks all supervisord services, restarts FATAL/STOPPED (up to 3 attempts, then Telegram alert with 1h dedup). Every 10 min: POSTs to https://api.zo.computer/snapshot with host_key=techstruction to prevent container idle-sleep and checkpoint state. Also probes Directus /server/health to keep it warm.
+- **Why:** Zo container can go idle/sleep when inactive. supervisord autorestart=true handles crashes but not idle suspension. Snapshot POST signals platform liveness and saves state for reprovision recovery.
+- **Directive updated:** No
+- **Tested:** Yes — RUNNING, first snapshot POST returned 202. All 12 services monitored.
