@@ -159,6 +159,14 @@ In the Techstruction metaphor: If you are building a generic office building, yo
 - [ ] Review and prune low-quality entries
 - [ ] Refine field schemas based on actual use
 - [ ] Document stable baseline in `UPDATE_LEDGER.md`
+ 
+ ### Stage 9 — Orchestration Upgrade (NemoClaw) 🔲
+ - [x] Research NemoClaw capabilities and security (via NotebookLM)
+ - [x] Download NemoClaw to repo root <!-- id: 1 -->
+ - [ ] Configure network guardrails (whitelist `applenotes.losguerreros.com`) <!-- id: 2 -->
+ - [ ] Synchronize execution scripts as NemoClaw Skills <!-- id: 3 -->
+ - [ ] Deploy and scale NemoClaw on MacBridge VPS <!-- id: 4 -->
+ - [ ] Verify sandboxed orchestration loop <!-- id: 5 -->
 
 ---
 

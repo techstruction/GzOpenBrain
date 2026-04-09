@@ -142,3 +142,11 @@
 - **Why:** Zo container can go idle/sleep when inactive. supervisord autorestart=true handles crashes but not idle suspension. Snapshot POST signals platform liveness and saves state for reprovision recovery.
 - **Directive updated:** No
 - **Tested:** Yes — RUNNING, first snapshot POST returned 202. All 12 services monitored.
+
+### [2026-04-08] — FIX — NemoClaw model not responding: Zo supervisord cold-start
+- **What changed:** Diagnosed and restored NemoClaw (Adam) after model went silent. Root cause: Zo Computer had restarted at ~03:52 UTC, losing supervisord [include] directive. All 10 custom services offline (Rate Queue, watchdog, Directus, GOBI, openclaw-gateway, etc.). Adam pod appeared healthy but had no inference backend.
+- **Fix:** Re-added [include] to /etc/zo/supervisord-user.conf, ran supervisorctl reread+update. All 12 services restored. Rate Queue healthy. Adam inference verified via `openclaw agent --agent main --message 'Reply with exactly: ADAM_ONLINE'` → ADAM_ONLINE.
+- **Root cause of recurrence:** Watchdog circular cold-start dependency — zo-watchdog.py can auto-heal the [include] once running, but it lives inside the custom config and cannot start cold. Fix (next session): add @reboot cron on Zo outside supervisord to ensure include is always restored.
+- **Documentation added:** DECISION-33, REPAIR_PHASES.md, lean CLAUDE.md for NemoClaw sessions.
+- **Directive updated:** BUILDSHEET §16 open items updated.
+- **Tested:** Yes — ADAM_ONLINE confirmed.

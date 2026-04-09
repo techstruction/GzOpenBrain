@@ -1,142 +1,155 @@
+"""
+telegram_webhook.py — GOBI ingestion webhook
+Receives messages from @GzOpenBrainInbox_bot, runs Sorter + Bouncer,
+writes to SQLite via db.py. No Affine. No external storage.
+"""
 import os
 import sys
 import json
 import logging
-import requests
 import subprocess
+import requests
 from flask import Flask, request
 from dotenv import load_dotenv
 
-# ─── Config ───────────────────────────────────────────────────────────────────
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'), override=True)
+# Add execution dir to path so db.py is importable
+sys.path.insert(0, os.path.dirname(__file__))
+import db
 
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-log = logging.getLogger('telegram_webhook')
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+log = logging.getLogger('gobi_webhook')
 
 app = Flask(__name__)
 
-BOT_TOKEN      = os.getenv('TELEGRAM_BOT_TOKEN')
-WEBHOOK_SECRET = os.getenv('TELEGRAM_WEBHOOK_SECRET')
+BOT_TOKEN      = os.getenv('GOBI_BOT_TOKEN')
+WEBHOOK_SECRET = os.getenv('GOBI_WEBHOOK_SECRET', '')
 HOST           = os.getenv('OPENBRAIN_HOST', '0.0.0.0')
-PORT           = int(os.getenv('OPENBRAIN_PORT', 8769))
+PORT           = int(os.getenv('OPENBRAIN_PORT', '8769'))
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-def send_message(chat_id, text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
-    try:
-        requests.post(url, json=payload, timeout=10)
-    except Exception as e:
-        log.error(f"Failed to send message: {e}")
+DOMAIN_EMOJI = {
+    'CAPITAL': '💰', 'COMPUTERS': '💻', 'CARS': '🚗',
+    'CANNAPY': '🌿', 'CLAN': '👨‍👩‍👧'
+}
 
-def run_script(script_name, arg1, arg2=None):
-    script_path = os.path.join(os.path.dirname(__file__), script_name)
-    cmd = ["python3", script_path, arg1]
-    if arg2:
-        cmd.append(arg2)
-    
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return json.loads(result.stdout)
-    except Exception as e:
-        log.error(f"Execution failed ({script_name}): {e}")
-        if hasattr(e, 'stderr'): log.error(f"Stderr: {e.stderr}")
-        return {"error": str(e)}
 
-def store_context(chat_id, text):
-    ctx_file = f"/tmp/openbrain_ctx_{chat_id}.txt"
-    try:
-        with open(ctx_file, 'w') as f:
-            f.write(text[:2000]) # Cap at 2k chars
-    except Exception as e:
-        log.error(f"Failed to store context: {e}")
-
-def get_context(chat_id):
-    ctx_file = f"/tmp/openbrain_ctx_{chat_id}.txt"
-    if os.path.exists(ctx_file):
-        try:
-            with open(ctx_file, 'r') as f:
-                return f.read()
-        except:
-            pass
-    return None
-
-# ─── Message Processor ────────────────────────────────────────────────────────
-def process_message(chat_id, text):
-    log.info(f"Processing message from {chat_id}: {text}")
-    
-    # 1. Determine if we should use context
-    context = None
-    lower_text = text.lower()
-    if len(text) < 30 or any(x in lower_text for x in ["save", "add", "this", "it", "keep"]):
-        context = get_context(chat_id)
-        if context: log.info("Using retrieved context for classification")
-
-    # 2. Classify
-    try:
-        cmd = ["python3", os.path.join(os.path.dirname(__file__), 'classify_message.py'), text]
-        if context:
-            cmd.extend(["--context", context])
-        
-        proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        classified = json.loads(proc.stdout)
-    except Exception as e:
-        log.error(f"Classification failed: {e}")
-        classified = {"domain": "Clan", "category": "Inbox Log", "intent": "capture"}
-
-    # 3. Handle Intent
-    if classified.get('intent') == 'execute':
-        send_message(chat_id, "⚡️ *Handing off to Specialist (OpenClaw)...*")
-        try:
-            res = run_script('agent_dispatcher.py', text)
-            if res.get('status') == 'success':
-                data = res.get('data', {})
-                payloads = data.get('result', {}).get('payloads', [])
-                if payloads and 'text' in payloads[0]:
-                    ans = payloads[0]['text']
-                    send_message(chat_id, f"🤖 *OpenClaw responds:*\n\n{ans}")
-                    store_context(chat_id, ans) # Store response for next "save"
-                else:
-                    send_message(chat_id, "🤖 Specialist processed the task but returned no text.")
-            else:
-                send_message(chat_id, f"❌ *Dispatch failed:* {res.get('message', 'Unknown')}")
-        except Exception as e:
-            log.error(f"Dispatch error: {e}")
+def send_receipt(chat_id: str, text: str):
+    if not BOT_TOKEN:
+        log.warning("GOBI_BOT_TOKEN not set — cannot send receipt")
         return
-
-    # 4. Store
     try:
-        res = run_script('write_to_affine.py', json.dumps(classified))
-        stored = res.get('success', False)
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+            timeout=10
+        )
     except Exception as e:
-        log.error(f"Storage error: {e}")
-        stored = False
+        log.error(f"Receipt send failed: {e}")
 
-    # 5. Receipt
-    domain = classified.get('domain', 'Clan')
-    emoji = {'Capital':'💰','Computers':'💻','Cars':'🚗','Cannapy':'🌿','Clan':'👨‍👩‍👧'}.get(domain, '📁')
-    status = "✅ Filed" if stored else "🗂 Classified (Store error)"
-    receipt = f"{emoji} *{domain}* → {classified.get('category','?')}\n📌 *{classified.get('title','Note')}*\n{status}"
-    send_message(chat_id, receipt)
+
+def run_sorter(message: str) -> dict:
+    script = os.path.join(os.path.dirname(__file__), 'classify_message.py')
+    try:
+        result = subprocess.run(
+            ['python3', script, message],
+            capture_output=True, text=True, check=True, timeout=130
+        )
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        log.error(f"Sorter failed: {e.stderr}")
+        return {"domain": "CLAN", "category": "Admin", "intent": "capture",
+                "title": "Sorter Error", "summary": message[:100],
+                "quality_score": "low", "tags": [], "metadata": {}}
+    except Exception as e:
+        log.error(f"Sorter exception: {e}")
+        return {"domain": "CLAN", "category": "Admin", "intent": "capture",
+                "title": "Sorter Exception", "summary": message[:100],
+                "quality_score": "low", "tags": [], "metadata": {}}
+
+
+def run_bouncer(classified: dict) -> tuple[str, str]:
+    """Returns (decision, reason) — 'pass' or 'flag'."""
+    script = os.path.join(os.path.dirname(__file__), 'bouncer_check.py')
+    try:
+        result = subprocess.run(
+            ['python3', script, json.dumps(classified)],
+            capture_output=True, text=True, check=True, timeout=15
+        )
+        out = json.loads(result.stdout)
+        return out.get('decision', 'pass'), out.get('reason', '')
+    except Exception as e:
+        log.error(f"Bouncer exception: {e}")
+        return 'pass', 'Bouncer error — defaulting to pass'
+
+
+def process_message(chat_id: str, text: str):
+    log.info(f"[{chat_id}] Received: {text[:80]}")
+
+    # 1. Raw capture → inbox_log
+    inbox_id = db.add_to_inbox(raw_content=text, source='telegram', sender_id=chat_id)
+    log.info(f"[{chat_id}] inbox_log id={inbox_id}")
+
+    # 2. Sorter
+    classified = run_sorter(text)
+    db.update_inbox_classification(inbox_id, classified)
+    log.info(f"[{chat_id}] Classified → {classified.get('domain')} / {classified.get('category')}")
+
+    # 3. Bouncer
+    decision, reason = run_bouncer(classified)
+    log.info(f"[{chat_id}] Bouncer → {decision} ({reason})")
+
+    # 4. Route
+    if decision == 'pass':
+        item_id = db.promote_to_items(inbox_id, classified, source='telegram')
+        domain = classified.get('domain', 'CLAN')
+        category = classified.get('category', 'Admin')
+        title = classified.get('title', 'Note')
+        emoji = DOMAIN_EMOJI.get(domain, '📁')
+        receipt = f"{emoji} *{domain}* → {category}\n📌 *{title}*\n✅ Filed to OpenBrain"
+    else:
+        db.flag_inbox(inbox_id, reason)
+        receipt = (
+            f"🚩 *Flagged for review*\n"
+            f"_{reason}_\n"
+            f"Your note is saved in the inbox. Check the dashboard to review."
+        )
+
+    send_receipt(chat_id, receipt)
+
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if WEBHOOK_SECRET:
-        if request.headers.get('X-Telegram-Bot-Api-Secret-Token') != WEBHOOK_SECRET:
+        token = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+        if token != WEBHOOK_SECRET:
             return 'Forbidden', 403
-    
-    data = request.json
-    if 'message' in data and 'text' in data['message']:
-        chat_id = data['message']['chat']['id']
-        text = data['message']['text']
+
+    data = request.get_json(silent=True)
+    if not data:
+        return 'ok', 200
+
+    msg = data.get('message', {})
+    text = msg.get('text', '').strip()
+    chat_id = str(msg.get('chat', {}).get('id', ''))
+
+    if text and chat_id:
         process_message(chat_id, text)
-    
+
     return 'ok', 200
+
 
 @app.route('/health')
 def health():
-    return json.dumps({"status": "ok"}), 200, {'Content-Type':'application/json'}
+    return json.dumps({"status": "ok", "bot": "GzOpenBrainInbox_bot"}), 200, \
+           {'Content-Type': 'application/json'}
+
 
 if __name__ == '__main__':
-    log.info(f"OpenBrain Webhook active on {PORT}")
+    db.init_db()
+    log.info(f"GOBI webhook starting on {HOST}:{PORT}")
     app.run(host=HOST, port=PORT, debug=False)
