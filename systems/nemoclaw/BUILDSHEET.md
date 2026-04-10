@@ -33,7 +33,7 @@ and L7 network enforcement.
 | Inference model | `nvidia/meta/llama-3.1-8b-instruct` via Rate Queue Proxy on Zo |
 | Host | MacBridge — headless Ubuntu, K3s via OpenShell |
 | Sandbox UUID | `854b2d84-783c-4749-bed4-ba5362184e7a` |
-| Active image | `docker.io/library/nemoclaw-custom:v3` (K3s containerd) |
+| Active image | `docker.io/library/nemoclaw-custom:v3` (K3s containerd) — **v4 build pending** |
 | Canonical Dockerfile | `~/GzOpenBrain/NemoClaw/Dockerfile.nemoclaw-custom` on MacBridge |
 | Sandbox policy version | v1 (adam-sandbox.yaml, applied at creation) |
 | Gateway port (MacBridge) | `127.0.0.1:18789` |
@@ -121,7 +121,8 @@ NVIDIA image has a clean `/sandbox/` — we bake our tools on top.
 | `/sandbox/.openclaw/skills/openbrain-interact/openbrain_interact.py` | DB write script | Added v3 |
 | `/sandbox/.openclaw/workspace/IDENTITY.md` | Adam persona/rules | Added v3 |
 | `/sandbox/.mcporter/mcporter.json` | OpenSpace + Directus MCP registration | v3: Directus entry added |
-| `/usr/lib/node_modules/@directus/content-mcp/` | Directus MCP package | Already in base openclaw image (no npm install needed) |
+| `/usr/lib/node_modules/mcporter/` | mcporter binary | **v4: baked via `npm install -g mcporter`** |
+| `/usr/lib/node_modules/@directus/content-mcp/` | Directus MCP package | **v4: baked via `npm install -g @directus/content-mcp`** |
 
 ### Dockerfile (canonical — `~/GzOpenBrain/NemoClaw/Dockerfile.nemoclaw-custom`)
 
@@ -132,7 +133,8 @@ v3 changes vs v2:
 - COPY openbrain_interact.py (from build context `skills/openbrain-interact/`)
 - COPY IDENTITY.md → `/sandbox/.openclaw/workspace/` (from build context `workspace/`)
 - mcporter.json now includes both OpenSpace + Directus entries
-- `@directus/content-mcp` is already in base openclaw image — no npm install needed
+- `@directus/content-mcp` and `mcporter` — **baked into v4** via `RUN npm install -g openclaw@latest mcporter @directus/content-mcp` at top of Dockerfile
+- v3 pods still require manual `npm install -g mcporter @directus/content-mcp` in §7 step 7
 
 ### How to rebuild the image (v3+)
 
@@ -152,19 +154,20 @@ cp ~/GzOpenBrain/NemoClaw/scripts/skills/openbrain-interact/openbrain_interact.p
 cp ~/GzOpenBrain/systems/nemoclaw/rules.md workspace/IDENTITY.md
 
 # 3. Build
-docker build -t nemoclaw-custom:v4 .  # increment version
+docker build -t nemoclaw-custom:v4 .  # increment version each build
 
 # Import into K3s (SLOW — 10-15 min for ~5.5GB image)
-docker save nemoclaw-custom:v3 | \
+docker save nemoclaw-custom:v4 | \
   docker exec -i openshell-cluster-nemoclaw ctr images import -
 
 # Verify import
 docker exec openshell-cluster-nemoclaw ctr images ls | grep nemoclaw-custom
 
 # Patch the sandbox to use the new image (DO NOT use --type=merge, see §10)
+# Replace v4 with the actual version tag you built
 openshell doctor exec -- kubectl patch sandbox adam -n openshell --type=json -p '[
   {"op":"replace","path":"/spec/podTemplate/spec/containers/0/image",
-   "value":"docker.io/library/nemoclaw-custom:v3"},
+   "value":"docker.io/library/nemoclaw-custom:v4"},
   {"op":"replace","path":"/spec/podTemplate/spec/containers/0/imagePullPolicy",
    "value":"IfNotPresent"}
 ]'
@@ -312,6 +315,18 @@ ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell a
 # ← CRITICAL: apiKey must be the LITERAL key string, NOT "NVIDIA_API_KEY" env var reference.
 #             OpenClaw has Shell env: off — env var refs are not resolved. If you use the var name,
 #             models.json will inherit it and effective key will show as "missing".
+# ← SCHEMA NOTE (v2026.3.11+): Keys changed from earlier versions:
+#   - `baseUrl` (lowercase u) not `baseURL`
+#   - `models` is required array of {id, name} objects — NOT a string
+#   - `gateway.mode` = "local" required (not `gateway.host`)
+#   - No `models.default` at top level
+#   Pipe approach works reliably (heredoc quoting in kubectl exec is unreliable):
+#     NVIDIA_KEY=$(ssh macbridge "grep NVIDIA_API_KEY ~/.nemoclaw-secrets | cut -d= -f2")
+#     BOT_TOKEN=$(ssh macbridge "grep TELEGRAM_BOT_TOKEN ~/.nemoclaw-secrets | cut -d= -f2")
+#     CONFIG=$(cat << EOF
+#     {"gateway":{"mode":"local","port":18789},"models":{"providers":{"nvidia":{"baseUrl":"http://100.106.189.97:18792/v1","apiKey":"${NVIDIA_KEY}","models":[{"id":"nvidia/meta/llama-3.1-8b-instruct","name":"nvidia/meta/llama-3.1-8b-instruct"}]}}},"channels":{"telegram":{"botToken":"${BOT_TOKEN}","dmPolicy":"allowlist","allowFrom":[7645251071]}}}
+#     EOF)
+#     echo "$CONFIG" | ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -i -n openshell adam -- bash -c 'cat > /root/.openclaw/openclaw.json'"
 NVIDIA_KEY="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"
 BOT_TOKEN="8529665233:AAF5G63jCELEdeZximg4khz_GKz4_Z8VPwE"
 SCRIPT="import json
@@ -357,11 +372,16 @@ echo auth OK
 # Verify:
 ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- python3 -c \"import json; d=json.load(open('/root/.openclaw/agents/main/agent/auth-profiles.json')); print('auth profiles:', list(d.keys()))\""
 
-# 7. [BAKED IN v3] mcporter config — no action needed
-# /sandbox/.mcporter/mcporter.json contains OpenSpace + Directus entries.
-# @directus/content-mcp is in the base openclaw image at /usr/lib/node_modules/.
-# OpenClaw gateway reads /sandbox/.mcporter/mcporter.json automatically.
-# Verify after gateway starts: openclaw agent exec -- mcporter list
+# 7. Install mcporter + @directus/content-mcp + copy mcporter.json
+# NOTE: These are NOT baked in the v3 image. They are /root/ ephemeral. Must reinstall after pod restart.
+# TODO for v4 Dockerfile: RUN npm install -g mcporter @directus/content-mcp
+ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- \
+  npm install -g mcporter @directus/content-mcp 2>&1 | grep 'added'"
+# Copy baked mcporter.json to /root/.mcporter/ (gateway reads this location)
+ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- \
+  bash -c 'mkdir -p /root/.mcporter && cp /sandbox/.mcporter/mcporter.json /root/.mcporter/mcporter.json && echo mcporter.json copied'"
+# Verify:
+ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- mcporter list"
 # Expected: openspace (4 tools) + directus-openbrain (20 tools)
 
 # 8. Write secrets to sandbox
@@ -376,15 +396,16 @@ EOF
 chmod 600 /sandbox/.nemoclaw-secrets
 echo secrets OK'"
 
-# 9. Start gateway  ← MUST source secrets first so NVIDIA_API_KEY is in gateway environment
-# Without this, inference fails: "No API key found for provider 'nvidia'"
+# 9. Start gateway  ← MUST use nohup + disown so process survives kubectl exec session ending
+# NOTE: `openclaw gateway start` tries to use systemd (not available in container) — don't use it.
+# NOTE: `openclaw gateway run` is the old subcommand — use `openclaw gateway --port 18789` directly.
 ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- \
-  bash -c 'source /sandbox/.nemoclaw-secrets && nohup openclaw gateway run --allow-unconfigured > /tmp/gateway.log 2>&1 &'"
-# Gateway daemonizes itself (exit 0) — wait 8s for the child process to start
+  bash -c 'nohup openclaw gateway --port 18789 </dev/null >>/tmp/gw.log 2>&1 & disown; sleep 1; echo PID:\$(pgrep -f \"openclaw gateway\")'"
+# Wait for gateway to start
 sleep 8
 ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- \
-  tail -4 /tmp/gateway.log"
-# Expected: "[gateway] listening on ws://127.0.0.1:18789" + "[telegram] starting provider (@Adams_Tech_ClawdBot)"
+  bash -c 'pgrep -f \"openclaw gateway\" && echo RUNNING; tail -5 /tmp/gw.log'"
+# Expected in log: "[gateway] listening on ws://127.0.0.1:18789" + "[telegram] starting provider (@Adams_Tech_ClawdBot)"
 # Verify Telegram connected:
 ssh macbridge "~/.local/bin/openshell doctor exec -- kubectl exec -n openshell adam -- \
   openclaw channels status"
